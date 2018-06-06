@@ -40,6 +40,7 @@
 #include "main.h"
 #include "stm32f4xx_hal.h"
 #include "i2c.h"
+#include "tim.h"
 #include "usart.h"
 #include "gpio.h"
 
@@ -99,6 +100,7 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   MX_I2C1_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -127,8 +129,6 @@ int main(void)
 	  int16_t g_y = mpu1.Gyroscope_Y;
 	  int16_t g_z = mpu1.Gyroscope_Z;
   /* USER CODE END WHILE */
-	  
-
 
   /* USER CODE BEGIN 3 */
 	  SD_MPU6050_ReadAccelerometer(&hi2c1,&mpu1);

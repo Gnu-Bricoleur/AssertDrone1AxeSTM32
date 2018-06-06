@@ -109,8 +109,7 @@ int main(void)
   {
 	  result = SD_MPU6050_Init(&hi2c1,&mpu1,SD_MPU6050_Device_0,SD_MPU6050_Accelerometer_2G,SD_MPU6050_Gyroscope_250s );
 	  //HAL_Delay(500);
-  /* USER CODE END WHILE */
-	  if(result == SD_MPU6050_Result_Ok)
+       if(result == SD_MPU6050_Result_Ok)
 	  {
 		  //SD_UART_Send(&huart1,mpu_ok,(uint16_t)15);
             //HAL_UART_Transmit(&huart2, mpu_ok, sizeof(mpu_ok), HAL_MAX_DELAY);
@@ -127,6 +126,10 @@ int main(void)
 	  int16_t g_x = mpu1.Gyroscope_X;
 	  int16_t g_y = mpu1.Gyroscope_Y;
 	  int16_t g_z = mpu1.Gyroscope_Z;
+  /* USER CODE END WHILE */
+	  
+
+
   /* USER CODE BEGIN 3 */
 	  SD_MPU6050_ReadAccelerometer(&hi2c1,&mpu1);
 	  int16_t a_x = mpu1.Accelerometer_X;
@@ -142,7 +145,7 @@ int main(void)
 
     char theIntAsString[7];
 
-    sprintf( theIntAsString, "%i", g_x );
+    sprintf( theIntAsString, "%i", a_x );
 
     HAL_UART_Transmit(&huart2, theIntAsString, sizeof(theIntAsString),  HAL_MAX_DELAY);
     HAL_UART_Transmit(&huart2, "\r\n", sizeof("\r\n"),  HAL_MAX_DELAY);

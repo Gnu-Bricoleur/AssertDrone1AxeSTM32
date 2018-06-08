@@ -1,4 +1,12 @@
 
+//SCL -> PB6
+//SDA -> PB7
+
+//PWM1 -> PA8
+//PWM2 -> PA9
+
+
+
 /**
   ******************************************************************************
   * @file           : main.c
@@ -78,6 +86,15 @@ int main(void)
     SD_MPU6050_Result result ;
 	uint8_t mpu_ok[15] = {"MPU WORK FINE\n"};
     uint8_t mpu_not[17] = {"MPU NOT WORKING\n"};
+    int16_t somme_erreur = 0;
+    int16_t delta_erreur = 0;
+    int16_t delta_erreur_prec = 0;
+    int16_t cmd = 0;
+    float kp = 0.02;           // Coefficient proportionnel
+    float ki = 0;           // Coefficient intégrateur
+    float kd = 0;           // Coefficient dérivateur
+    int moteur1 = 0;
+    int moteur2 = 0;
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -104,6 +121,31 @@ int main(void)
   /* USER CODE BEGIN 2 */
     HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
     HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+
+  //TEST SEQUENCE DEMARRAGE
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 6000);
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, 6000);
+    HAL_Delay(4000);
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 3000);
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, 3000);
+    HAL_Delay(4000);
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 3000);
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, 3000);
+
+
+
+    int i = 2000;
+    for (i = 3000; i< 3500; i++)
+    {
+        __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, i);
+        __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, i);
+        HAL_Delay(7);
+    }
+
+    HAL_Delay(200);
+    HAL_UART_Transmit(&huart2, "Attenzion zest partiiii  ....", sizeof("Attenzion zest partiiii  ...."),HAL_MAX_DELAY);
+
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -121,33 +163,65 @@ int main(void)
 	  else
 	  {
 		  //SD_UART_Send(&huart1,mpu_not,(uint16_t)17);
-            //HAL_UART_Transmit(&huart2, "Holle", sizeof("Holle"), HAL_MAX_DELAY);
+            HAL_UART_Transmit(&huart2, "MPU en PLS", sizeof("MPU en PLS"), HAL_MAX_DELAY);
 	  }
-	  HAL_Delay(20);
+	  //HAL_Delay(20);
 	  SD_MPU6050_ReadTemperature(&hi2c1,&mpu1);
 	  float temper = mpu1.Temperature;
 	  SD_MPU6050_ReadGyroscope(&hi2c1,&mpu1);
 	  int16_t g_x = mpu1.Gyroscope_X;
 	  int16_t g_y = mpu1.Gyroscope_Y;
-int16_t g_z = mpu1.Gyroscope_Z;
+        int16_t g_z = mpu1.Gyroscope_Z;
 
 
-        SD_MPU6050_ReadAccelerometer(&hi2c1,&mpu1);
+      SD_MPU6050_ReadAccelerometer(&hi2c1,&mpu1);
 	  int16_t a_x = mpu1.Accelerometer_X;
 	  int16_t a_y = mpu1.Accelerometer_Y;
-        int16_t a_z = mpu1.Accelerometer_Z;
-    char theIntAsString[7];
+      int16_t a_z = mpu1.Accelerometer_Z;
+      char theIntAsString[7];
 
-    sprintf( theIntAsString, "%i", g_x );
-
+/*
+    sprintf( theIntAsString, "%i", a_y );
     HAL_UART_Transmit(&huart2, theIntAsString, sizeof(theIntAsString),HAL_MAX_DELAY);
     HAL_UART_Transmit(&huart2, "\r\n", sizeof("\r\n"), HAL_MAX_DELAY);
+*/
 
-    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 4000);
-    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, 25);
+
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
+    
+
+    // Calcul des erreurs
+    int16_t erreur = a_y;
+    somme_erreur += erreur;
+    delta_erreur = erreur-delta_erreur_prec;
+    delta_erreur_prec = delta_erreur;
+ 
+    // PID : calcul de la commande
+    cmd = kp*erreur + ki*somme_erreur + kd*delta_erreur;
+
+
+    //HAL_UART_Transmit(&huart2, "coucou", sizeof("coucou"),HAL_MAX_DELAY);
+    sprintf( theIntAsString, "%i", cmd );
+    HAL_UART_Transmit(&huart2, theIntAsString, sizeof(theIntAsString),HAL_MAX_DELAY);
+    HAL_UART_Transmit(&huart2, "\r\n", sizeof("\r\n"), HAL_MAX_DELAY);
+
+
+    if(cmd>0)
+    {
+        moteur1 = 3200 + cmd;
+        moteur2 = 3200;
+    }
+    else
+    {
+        moteur1 = 3200;
+        moteur2 = 3200 + abs(cmd);
+    }
+
+
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, moteur1);
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, moteur2);
 
   }
   /* USER CODE END 3 */
@@ -228,6 +302,8 @@ void _Error_Handler(char *file, int line)
   /* User can add his own implementation to report the HAL error return state */
   while(1)
   {
+    HAL_UART_Transmit(&huart2, "Alerte, nous avons un code rouge", sizeof("Alerte, nous avons un code rouge"),HAL_MAX_DELAY);
+    HAL_UART_Transmit(&huart2, "\r\n", sizeof("\r\n"), HAL_MAX_DELAY);
   }
   /* USER CODE END Error_Handler_Debug */
 }

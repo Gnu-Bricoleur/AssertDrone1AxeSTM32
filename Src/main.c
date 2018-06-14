@@ -91,8 +91,8 @@ int main(void)
     int16_t delta_erreur_prec = 0;
     int16_t cmd = 0;
     float kp = 0.02;           // Coefficient proportionnel
-    float ki = 0;           // Coefficient intégrateur
-    float kd = 0;           // Coefficient dérivateur
+    float ki = 0.0;           // Coefficient intégrateur
+    float kd = 0.01;           // Coefficient dérivateur
     int moteur1 = 0;
     int moteur2 = 0;
   /* USER CODE END 1 */
@@ -135,7 +135,7 @@ int main(void)
 
 
     int i = 2000;
-    for (i = 3000; i< 3500; i++)
+    for (i = 3000; i< 3200; i++)
     {
         __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, i);
         __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, i);
@@ -171,7 +171,7 @@ int main(void)
 	  SD_MPU6050_ReadGyroscope(&hi2c1,&mpu1);
 	  int16_t g_x = mpu1.Gyroscope_X;
 	  int16_t g_y = mpu1.Gyroscope_Y;
-        int16_t g_z = mpu1.Gyroscope_Z;
+      int16_t g_z = mpu1.Gyroscope_Z;
 
 
       SD_MPU6050_ReadAccelerometer(&hi2c1,&mpu1);
@@ -180,11 +180,11 @@ int main(void)
       int16_t a_z = mpu1.Accelerometer_Z;
       char theIntAsString[7];
 
-/*
-    sprintf( theIntAsString, "%i", a_y );
+    int16_t a_yt = (a_y/16400.0)*90;
+    sprintf( theIntAsString, "%i", a_yt );
     HAL_UART_Transmit(&huart2, theIntAsString, sizeof(theIntAsString),HAL_MAX_DELAY);
     HAL_UART_Transmit(&huart2, "\r\n", sizeof("\r\n"), HAL_MAX_DELAY);
-*/
+    HAL_Delay(200);
 
 
   /* USER CODE END WHILE */
@@ -198,11 +198,12 @@ int main(void)
     delta_erreur = erreur-delta_erreur_prec;
     delta_erreur_prec = delta_erreur;
  
+
     // PID : calcul de la commande
     cmd = kp*erreur + ki*somme_erreur + kd*delta_erreur;
 
 
-    //HAL_UART_Transmit(&huart2, "coucou", sizeof("coucou"),HAL_MAX_DELAY);
+    HAL_UART_Transmit(&huart2, "com", sizeof("com"),HAL_MAX_DELAY);
     sprintf( theIntAsString, "%i", cmd );
     HAL_UART_Transmit(&huart2, theIntAsString, sizeof(theIntAsString),HAL_MAX_DELAY);
     HAL_UART_Transmit(&huart2, "\r\n", sizeof("\r\n"), HAL_MAX_DELAY);
@@ -210,7 +211,7 @@ int main(void)
 
     if(cmd>0)
     {
-        moteur1 = 3200 + cmd;
+        moteur1 = 3200 + abs(cmd);
         moteur2 = 3200;
     }
     else
